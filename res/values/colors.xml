@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+   
+    <color name="white">#ffffffff</color>
+    <color name="black">#000000</color>
+    <color name="gray">#E0E0E0</color>
+    <color name="work_split_line">#dadada</color>
+  
+</resources>
