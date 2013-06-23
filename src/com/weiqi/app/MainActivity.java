@@ -1,110 +1,81 @@
 package com.weiqi.app;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import com.weiqi.app.util.HttpClientUtils;
-import com.weiqi.app.util.LazyImageLoader;
-
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Handler.Callback;
-import android.os.Message;
 import android.app.Activity;
-import android.util.Log;
+import android.os.Bundle;
 import android.view.Menu;
 import android.widget.ImageView;
 import android.widget.TextView;
+import com.weiqi.app.constant.WeiQiConstants;
+import com.weiqi.app.util.LazyImageLoader;
+import com.weiqi.app.util.http.AsyncHttpRequestUtils;
+import com.weiqi.app.util.http.BaseAsyncHttpResponseHandler;
 
-public class MainActivity extends Activity implements Callback {
+public class MainActivity extends Activity {
 
-	private TextView tv;
+    private TextView  tv;
 
-	private Handler handler;
+    private ImageView imageView;
 
-	private String result;
-	
-	private ImageView imageView;
-	
-	private TextView companyName;
+    private TextView  companyName;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-		handler = new Handler(this);
-		tv = (TextView) findViewById(R.id.txt);
-		companyName = (TextView) findViewById(R.id.companyName);
-		imageView = (ImageView)findViewById(R.id.image);
-		new MainPageLoader().execute();
-	}
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        tv = (TextView) findViewById(R.id.txt);
+        companyName = (TextView) findViewById(R.id.companyName);
+        imageView = (ImageView) findViewById(R.id.image);
+        new MainPageLoader().doInBackground();
+    }
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
 
-	private class MainPageLoader extends AsyncTask<String, String, Integer> {
+    private class MainPageLoader {
 
-		@Override
-		protected Integer doInBackground(String... params) {
+        
+        protected void doInBackground(String... params) {
 
-			try {
-				Map<String,String> param = new HashMap<String,String>(){
-					{
-						this.put("appuuid", 11+"");
-						this.put("ddd", 2+"");
-					}
-				};
-				result = HttpClientUtils.getHttpUrl("http://10.17.218.9/weiqi/app/page", param);
-				return 0;
-			} catch (Exception e) {
-				Log.e("", e.toString());
-			}
-			return 1;
-		}
-		
-		@Override
-		protected void onPostExecute(Integer result) {
-			handler.sendEmptyMessage(result);
-		}
+            Map<String, String> param = new HashMap<String, String>() {
+                {
+                    this.put("appuuid", 11 + "");
+                    this.put("ddd", 2 + "");
+                }
+            };
 
-	}
+            AsyncHttpRequestUtils.get("/app/page", param, new BaseAsyncHttpResponseHandler() {
 
-	@Override
-	public boolean handleMessage(Message msg) {
-		switch (msg.what) {
-		case 0:
-			try {
-				JSONObject json = new JSONObject(result);
-				tv.setText(json.getString("introduceDetail"));
-				companyName.setText(json.getString("companyName"));
-				String url = "http://10.17.218.9/weiqi/" + json.getString("introduceImage");
-				LazyImageLoader.getInstance(this).displayImage(url,
-						imageView, 800, 800,
-						R.drawable.ic_launcher);
-			} catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+                @Override
+                protected void failure(int errorCode) {
+                    tv.setText("sorry,error!");
+                }
 
-			break;
-		case 1:
+                @Override
+                protected void sucess(int successCode, String message) {
+                    try {
+                        JSONObject json = new JSONObject(message);
+                        tv.setText(json.getString("introduceDetail"));
+                        companyName.setText(json.getString("companyName"));
+                        String url = WeiQiConstants.BASE_URL + "/"+ json.getString("introduceImage");
+                        LazyImageLoader.getInstance(MainActivity.this).displayImage(url, imageView, 800, 800, R.drawable.ic_launcher);
+                    } catch (JSONException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
 
-			tv.setText("sorry,error!");
-			break;
-		}
-		return false;
-	}
-	
-	
+                }
+
+            });
+        }
+
+    }
+
 }
